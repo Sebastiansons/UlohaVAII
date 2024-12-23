@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reklamačný Formulár</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .custom-file-input:lang(en) ~ .custom-file-label::after {
+            content: "Vybrať súbory";
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Reklamačný Formulár</h2>
+        <form id="complaintForm">
+            <div class="form-group">
+                <label for="name">Meno</label>
+                <input type="text" class="form-control" id="name" placeholder="Vaše meno" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" placeholder="Váš email" required>
+            </div>
+            <div class="form-group">
+                <label for="orderNumber">Číslo objednávky</label>
+                <input type="text" class="form-control" id="orderNumber" placeholder="Číslo vašej objednávky" required>
+            </div>
+            <div class="form-group">
+                <label for="complaint">Popis reklamácie</label>
+                <textarea class="form-control" id="complaint" rows="4" placeholder="Popíšte vašu reklamáciu" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="images">Nahrať obrázky</label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="images" multiple accept=".jpg, .jpeg, .png" required>
+                    <label class="custom-file-label" for="images">Vybrať súbory</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Odoslať</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $('.custom-file-input').on('change', function () {
+            var files = Array.from(this.files).map(file => file.name).join(', ');
+            $(this).next('.custom-file-label').html(files);
+        });
+
+        document.getElementById('complaintForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            var name = document.getElementById('name').value;
+            var email = document.getElementById('email').value;
+            var orderNumber = document.getElementById('orderNumber').value;
+            var complaint = document.getElementById('complaint').value;
+            var images = document.getElementById('images').files;
+
+            var errors = [];
+
+            if (name.length > 60) {
+                errors.push('Meno musí mať maximálne 60 znakov.');
+            }
+            if (email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                errors.push('Email musí byť platný a mať maximálne 100 znakov.');
+            }
+            if (!/^\d{1,10}$/.test(orderNumber)) {
+                errors.push('Číslo objednávky musí obsahovať iba číslice a maximálne 10 číslic.');
+            }
+            if (complaint.length > 255) {
+                errors.push('Popis reklamácie musí mať maximálne 255 znakov.');
+            }
+
+            if (errors.length > 0) {
+                alert(errors.join('\n'));
+                return;
+            }
+
+            var base64Images = [];
+            Array.from(images).forEach(function (image, index) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    base64Images.push(e.target.result);
+                    if (base64Images.length === images.length) {
+                        var formData = {
+                            name: name,
+                            email: email,
+                            orderNumber: orderNumber,
+                            complaint: complaint,
+                            images: base64Images
+                        };
+                        sendFormData(formData);
+                    }
+                };
+                reader.readAsDataURL(image);
+            });
+        });
+
+        function sendFormData(formData) {
+            fetch('index.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(data => {
+                alert('Formulár bol úspešne odoslaný!');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Chyba:', error);
+                alert('Pri odosielaní formulára došlo k chybe.');
+            });
+        }
+    </script>
+</body>
+</html>
